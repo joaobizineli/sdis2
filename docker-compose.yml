@@ -1,0 +1,50 @@
+services:
+  # Sistema Principal de Produção
+  sistema-producao:
+    build: .
+    container_name: SisProd_main
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    networks:
+      - production_network
+
+  # Banco de Dados Redis para Cache/Buffer
+  redis:
+    image: redis:7-alpine
+    container_name: SisProd_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - production_network
+    command: redis-server --appendonly yes
+
+  # Banco PostgreSQL para dados persistentes
+  postgres:
+    image: postgres:15-alpine
+    container_name: SisProd_db
+    environment:
+      - POSTGRES_DB=producao
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - production_network
+
+networks:
+  production_network:
+    driver: bridge
+
+volumes:
+  redis_data:
+  postgres_data:
